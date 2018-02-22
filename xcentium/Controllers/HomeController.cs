@@ -27,7 +27,10 @@ namespace xcentium.Controllers
         [HttpPost]
         public ActionResult Index(string siteToParse)
         {
-            ViewBag.Message = "Your application description page.";
+            ViewBag.Message = "";
+            ViewBag.topTenWords = "";
+            ViewBag.nameOfWebsite = "";
+            ViewBag.totalWordCount = "";
             utilities util = new utilities();
             List<htmlImageViewModels> listOfImages = new List<htmlImageViewModels>();
             
@@ -38,41 +41,51 @@ namespace xcentium.Controllers
             //string HTMLString = "https://www.nytimes.com";
             string HTMLString = siteToParse;
             var value = util.getHTMLContent(HTMLString, userAgent);
-
-            // Write values.
-            string imgPattern = @"<img.+?src=[""'](.+?)[""'].*?>";
-            string picturePattern = @"<source.+?srcset=[""'](.+?)[""'].*?>";
-
-            Regex imgReg = new Regex(imgPattern);
-            Regex picReg = new Regex(picturePattern);
-            MatchCollection imgMatches = imgReg.Matches(value);
-            MatchCollection picMatches = picReg.Matches(value);
-
-            foreach (Match match in imgMatches)
+            if (value.Count() > 0)
             {
-                htmlImageViewModels vImage = new htmlImageViewModels();
-                vImage.imageSource = match.Groups[1].Value;
+                // Write values.
+                string imgPattern = @"<img.+?src=[""'](.+?)[""'].*?>";
+                string picturePattern = @"<source.+?srcset=[""'](.+?)[""'].*?>";
 
-              listOfImages.Add(vImage);
+                Regex imgReg = new Regex(imgPattern);
+                Regex picReg = new Regex(picturePattern);
+                MatchCollection imgMatches = imgReg.Matches(value);
+                MatchCollection picMatches = picReg.Matches(value);
+
+                foreach (Match match in imgMatches)
+                {
+                    htmlImageViewModels vImage = new htmlImageViewModels();
+                    vImage.imageSource = match.Groups[1].Value;
+
+                    listOfImages.Add(vImage);
+                }
+                foreach (Match match in picMatches)
+                {
+                    htmlImageViewModels vImage = new htmlImageViewModels();
+                    vImage.imageSource = match.Groups[1].Value;
+
+                    listOfImages.Add(vImage);
+                }
+
+                string remainderText = util.stripHTML(value);
+
+                int totalCountofWords = util.countWords(remainderText);
+
+                IEnumerable<htmlWordCoundViewModels> orderedWords = Regex.Split(remainderText.ToLower(), @"\W+").GroupBy(s => s).Select(term => new htmlWordCoundViewModels { popularWord = term.Key, totalPageWordCount = totalCountofWords, wordCount = term.Count() }).OrderByDescending(g => g.wordCount).Take(10);
+
+                var popularTerms = orderedWords;
+
+                ViewBag.topTenWords = orderedWords;
+                ViewBag.nameOfWebsite = siteToParse;
+                ViewBag.totalWordCount = totalCountofWords;
             }
-            foreach (Match match in picMatches)
+
+            else
+
             {
-                htmlImageViewModels vImage = new htmlImageViewModels();
-                vImage.imageSource = match.Groups[1].Value;
-
-                listOfImages.Add(vImage);
+                ViewBag.Message = "Whoops! Seems like we aren't able to find this webpage right now. Please verify what you entered is accurate.";
             }
-
-            string remainderText = util.stripHTML(value);
-
-            int totalCountofWords = util.countWords(remainderText);
-
-            IEnumerable<htmlWordCoundViewModels> orderedWords = Regex.Split(remainderText.ToLower(), @"\W+").GroupBy(s => s).Select(term => new htmlWordCoundViewModels { popularWord = term.Key, totalPageWordCount = totalCountofWords, wordCount = term.Count() }).OrderByDescending(g => g.wordCount).Take(10);
-
-            var popularTerms = orderedWords;
-
-            ViewBag.topTenWords = orderedWords;
-            ViewBag.totalWordCount = totalCountofWords;
+                        
             ViewData.Model = listOfImages;
 
             return View();

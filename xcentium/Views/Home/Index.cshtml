@@ -21,11 +21,12 @@
         <!-- A Button to Submit your Response -->
         <input type='submit' value='Submit Answer' />
     </form>
-
-    @if (Model != null)
+</div>
+<div class="row">
+    @if (Model != null && Model.Count() > 0)
     {
-        <h2>There are @ViewBag.totalWordCount words on that webpage.</h2>
-        <h3>Here is a list of the top ten most used words on the site you just submitted.</h3>
+        <h2>There are @ViewBag.totalWordCount words on @ViewBag.nameOfWebsite</h2>
+        <h3>Here are the top ten most used words.</h3>
 
         <div>
             @foreach (var term in ViewBag.topTenWords)
@@ -42,5 +43,9 @@
             }
 
         </div>
+    }
+    else
+    {
+        @ViewBag.Message
     }
 </div>
